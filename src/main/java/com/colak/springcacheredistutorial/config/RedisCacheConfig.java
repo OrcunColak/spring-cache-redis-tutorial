@@ -14,6 +14,13 @@ import java.time.Duration;
 @EnableCaching
 public class RedisCacheConfig {
 
+    // To configure Redis Cache we have these options
+    // 1. Use RedisCacheManagerBuilderCustomizer
+    // 2. Create a CacheManager using RedisCacheConfiguration  + RedisCacheManager.RedisCacheManagerBuilder
+    // Example is here
+    // https://github.com/tugayesilyurt/spring-debezium-kafka-mysql-redis-cacheable/blob/main/spring-debezium-kafka-redis-cacheable/src/main/java/com/debezium/example/configuration/RedisConfig.java
+
+
     @Bean
     public RedisCacheManagerBuilderCustomizer redisCacheManagerBuilderCustomizer() {
         GenericJackson2JsonRedisSerializer redisSerializer = new GenericJackson2JsonRedisSerializer();
