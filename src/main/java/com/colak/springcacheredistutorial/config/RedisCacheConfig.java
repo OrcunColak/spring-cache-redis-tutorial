@@ -20,6 +20,16 @@ public class RedisCacheConfig {
     // Example is here
     // https://github.com/tugayesilyurt/spring-debezium-kafka-mysql-redis-cacheable/blob/main/spring-debezium-kafka-redis-cacheable/src/main/java/com/debezium/example/configuration/RedisConfig.java
 
+    // See https://medium.com/@shyamkrishnakumar/java-springboot-3-redis-configuration-with-redis-server-hosted-on-gcp-having-ssl-and-password-f470f78d9518
+    // I am hoping that this will provide default cache values
+    @Bean
+    public RedisCacheConfiguration cacheConfiguration() {
+        GenericJackson2JsonRedisSerializer redisSerializer = new GenericJackson2JsonRedisSerializer();
+        return RedisCacheConfiguration.defaultCacheConfig()
+                .entryTtl(Duration.ofMinutes(60))
+                .disableCachingNullValues()
+                .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(redisSerializer));
+    }
 
     @Bean
     public RedisCacheManagerBuilderCustomizer redisCacheManagerBuilderCustomizer() {
@@ -28,6 +38,7 @@ public class RedisCacheConfig {
         // We need to Randomize cache expiry periods
         // See https://medium.com/@shaileshkumarmishra/can-cache-layer-slow-down-databases-b72e70df18a8
         return builder -> builder
+                // cache name and RedisCacheConfiguration
                 .withCacheConfiguration("employees",
                         RedisCacheConfiguration.defaultCacheConfig()
                                 .entryTtl(Duration.ofMinutes(5))
