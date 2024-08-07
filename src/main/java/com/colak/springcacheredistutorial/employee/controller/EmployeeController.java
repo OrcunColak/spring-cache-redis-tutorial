@@ -47,7 +47,7 @@ public class EmployeeController {
     }
 
     @PostMapping("/update")
-    @CachePut(key = "#employeeDTO.id")
+    @CachePut(key = "#employeeDTO.id", unless = "#employeeDTO != null")
     public EmployeeDTO update(@RequestBody EmployeeDTO employeeDTO) {
         log.info("update is called with : {}", employeeDTO);
 
@@ -77,7 +77,7 @@ public class EmployeeController {
     @GetMapping(path = "/findById/{id}")
     // Setting sync to true means that consecutive hits which happened before the cache was properly populated,
     // will wait for the cache to actually be populated, instead of performing another request to the database.
-    @Cacheable(key = "#id", sync = true)
+    @Cacheable(key = "#id", condition = "#id != null", sync = true)
     public EmployeeDTO findById(@PathVariable Long id) {
         log.info("findById is called with : {}", id);
         return employeeService.findById(id)
@@ -89,7 +89,7 @@ public class EmployeeController {
     @DeleteMapping(path = "/deleteById/{id}")
     // beforeInvocation attribute allows us to control the eviction process, enabling us to choose whether the eviction
     // should occur before or after the method execution.
-    @CacheEvict(key = "#id", beforeInvocation = true)
+    @CacheEvict(key = "#id", condition = "#id != null", beforeInvocation = true)
     public void deleteById(@PathVariable Long id) {
         log.info("deleteById is called with : {}", id);
         employeeService.deleteById(id);
