@@ -1,4 +1,4 @@
-package com.colak.springcacheredistutorial.employee.jpa;
+package com.colak.springtutorial.employee.jpa;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

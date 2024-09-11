@@ -1,4 +1,4 @@
-package com.colak.springcacheredistutorial.config;
+package com.colak.springtutorial.config;
 
 import org.springframework.boot.autoconfigure.cache.RedisCacheManagerBuilderCustomizer;
 import org.springframework.cache.annotation.EnableCaching;
