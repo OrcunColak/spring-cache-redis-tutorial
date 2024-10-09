@@ -1,11 +1,15 @@
 package com.colak.springtutorial.config;
 
+import com.colak.springtutorial.employee.dto.EmployeeDTO;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.boot.autoconfigure.cache.RedisCacheManagerBuilderCustomizer;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
+import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializationContext;
 
 import java.time.Duration;
@@ -14,42 +18,38 @@ import java.time.Duration;
 @EnableCaching
 public class RedisCacheConfig {
 
-    // To configure Redis Cache we have these options
-    // 1. Use RedisCacheManagerBuilderCustomizer
-    // 2. Create a CacheManager using RedisCacheConfiguration  + RedisCacheManager.RedisCacheManagerBuilder
-    // Example is here
-    // https://github.com/tugayesilyurt/spring-debezium-kafka-mysql-redis-cacheable/blob/main/spring-debezium-kafka-redis-cacheable/src/main/java/com/debezium/example/configuration/RedisConfig.java
-
-    // See https://medium.com/@shyamkrishnakumar/java-springboot-3-redis-configuration-with-redis-server-hosted-on-gcp-having-ssl-and-password-f470f78d9518
-    // I am hoping that this will provide default cache values
-    @Bean
-    public RedisCacheConfiguration cacheConfiguration() {
-        GenericJackson2JsonRedisSerializer redisSerializer = new GenericJackson2JsonRedisSerializer();
-        return RedisCacheConfiguration.defaultCacheConfig()
-                .entryTtl(Duration.ofMinutes(60))
-                .disableCachingNullValues()
-                .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(redisSerializer));
-    }
+    private static final String CACHE_PREFIX = "Cache:";
 
     @Bean
-    public RedisCacheManagerBuilderCustomizer redisCacheManagerBuilderCustomizer() {
-        GenericJackson2JsonRedisSerializer redisSerializer = new GenericJackson2JsonRedisSerializer();
+    public RedisCacheManagerBuilderCustomizer redisCacheManagerBuilderCustomizer(ObjectMapper objectMapper) {
+
+        // See https://medium.com/@davenkin_93074/configure-jackson-when-using-spring-boot-redis-cache-daf658ea5e74
+        ObjectMapper cacheObjectMapper = objectMapper.copy();
+        cacheObjectMapper
+                .activateDefaultTyping(cacheObjectMapper.getPolymorphicTypeValidator(), ObjectMapper.DefaultTyping.NON_FINAL, JsonTypeInfo.As.PROPERTY);
+
+        // Here we are using GenericJackson2JsonRedisSerializer together with Jackson’s Default Typing feature.
+        // The GenericJackson2JsonRedisSerializer is supposed to work with any class.
+        GenericJackson2JsonRedisSerializer genericSerializer = new GenericJackson2JsonRedisSerializer(cacheObjectMapper);
+
+        // I would rather create Jackson2JsonRedisSerializer for each cached model to ensure our own model's freedom
+        Jackson2JsonRedisSerializer<EmployeeDTO> employeeSerializer = new Jackson2JsonRedisSerializer<>(cacheObjectMapper, EmployeeDTO.class);
 
         // We need to Randomize cache expiry periods
         // See https://medium.com/@shaileshkumarmishra/can-cache-layer-slow-down-databases-b72e70df18a8
         return builder -> builder
+                .cacheDefaults(RedisCacheConfiguration.defaultCacheConfig()
+                        .prefixCacheNameWith(CACHE_PREFIX)
+                        .entryTtl(Duration.ofMinutes(60))
+                        .disableCachingNullValues()
+                        .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(genericSerializer)))
+
                 // cache name and RedisCacheConfiguration
                 .withCacheConfiguration("employees",
                         RedisCacheConfiguration.defaultCacheConfig()
                                 .entryTtl(Duration.ofMinutes(5))
                                 .disableCachingNullValues()
-                                .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(redisSerializer))
-                )
-                .withCacheConfiguration("restaurants",
-                        RedisCacheConfiguration.defaultCacheConfig()
-                                .entryTtl(Duration.ofMinutes(3))
-                                .disableCachingNullValues()
-                                .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(redisSerializer))
+                                .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(employeeSerializer))
                 );
     }
 }
