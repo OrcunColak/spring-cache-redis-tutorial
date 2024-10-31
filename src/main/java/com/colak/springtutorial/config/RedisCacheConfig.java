@@ -38,6 +38,7 @@ public class RedisCacheConfig {
         // We need to Randomize cache expiry periods
         // See https://medium.com/@shaileshkumarmishra/can-cache-layer-slow-down-databases-b72e70df18a8
         return builder -> builder
+                .transactionAware()
                 .cacheDefaults(RedisCacheConfiguration.defaultCacheConfig()
                         .prefixCacheNameWith(CACHE_PREFIX)
                         .entryTtl(Duration.ofMinutes(60))
